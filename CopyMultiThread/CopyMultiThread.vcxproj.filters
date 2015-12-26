@@ -30,6 +30,9 @@
     <ClInclude Include="CopyMultiThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BrowseForFolder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

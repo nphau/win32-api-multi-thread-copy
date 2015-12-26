@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "BrowseForFolder.h"
 #include "CopyMultiThread.h"
 
 // Forward declarations of functions included in this code module:
