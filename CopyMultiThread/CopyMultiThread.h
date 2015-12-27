@@ -1,20 +1,17 @@
 ﻿#pragma once
 
 #include "resource.h"
-#include <commdlg.h>
 
 #define MAX_LOADSTRING 100
 
 // Global Variables:
 static HINSTANCE hInst;								// current instance
-static TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
+static TCHAR szTitle[MAX_LOADSTRING];				// The title bar text
 static TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
 static HWND hEditChooseFile = NULL;
 static HWND hEditSaveFile = NULL;
 static HWND hComboThread = NULL;
-
-static WCHAR szOpenfile[MAX_PATH] = L"";
 
 void InitThreadComboBox(HWND hDlg)
 {
@@ -46,44 +43,60 @@ void OnCreateProcessing(HWND hDlg)
 	hEditSaveFile = GetDlgItem(hDlg, IDC_EDIT_SAVE_FILE);
 	hComboThread = GetDlgItem(hDlg, IDC_COMBO_THREAD);
 
+	ZeroMemory(&folder, sizeof(FOLDER));
+
 	// Initializing default value for combo box
 	InitThreadComboBox(hDlg);
 }
 
-void OnStartCopy(HWND hDlg)
+DWORD WINAPI ThreadProc(LPVOID lpParam)
 {
-	MessageBox(hDlg, L"Bắt đầu copy, vui lòng đợi ...", szTitle, MB_OK);
+	// Cast the parameter to the correct data type.
+	// The pointer is known to be valid because 
+	// it was checked for NULL before the thread was created.
+	PFOLDER folder = (PFOLDER)lpParam;
+
+	WCHAR src[MAX_PATH] = L"";
+	WCHAR dest[MAX_PATH] = L"";
+
+	wcscpy(src,folder->szSourceFile);
+
+	wcscpy(dest, folder->szFolderPath);
+	wcscat(dest, L"\\");
+	wcscat(dest, folder->szFileName);
+
+	if (CopyFile(src, dest, FALSE))
+	{
+		MessageBox(NULL, L"Copy thành công", L"ThreadFunc", MB_OK);
+	}
+	return 0;
 }
 
-void GetFileURL(HWND hWnd, WCHAR path[], WCHAR szDlgTitle[])
+void StartCopy()
 {
-	OPENFILENAME ofn;
-
-	WCHAR szFile[MAX_PATH] = L"";
-
-	ZeroMemory(&ofn, sizeof(OPENFILENAME));
-
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = hWnd;
-	ofn.lpstrFilter = L"All file (*.*)\0*.*\0";
-	ofn.lpstrFile = szFile;
-
-	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
-	// use the contents of szFile to initialize itself.
-	ofn.lpstrFile[0] = '\0';
-	ofn.lpstrTitle = szDlgTitle;
-	ofn.nMaxFile = MAX_PATH;
-	ofn.nFilterIndex = 1;
-	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
-	ofn.lpstrDefExt = L"txt";
-
-	if (GetOpenFileName(&ofn))
+	try{
+		// Default Priority: TTHREAD_PRIORITY_NORMAL
+		HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, (LPVOID)&folder, 0, 0);
+	}
+	catch (...)
 	{
-		_tcscpy(path, szFile);
+		GetLastError();
 	}
 }
-
-
+void OnStartCopy(HWND hDlg)
+{
+	if (!wcscmp(folder.szSourceFile, L""))
+	{
+		MessageBox(hDlg, L"Bạn chưa chọn file để copy!", szTitle, MB_OK | MB_ICONHAND);
+		return;
+	}
+	if (!wcscmp(folder.szFolderPath, L""))
+	{
+		MessageBox(hDlg, L"Bạn chưa chọn thư mục để lưu file!", szTitle, MB_OK | MB_ICONHAND);
+		return;
+	}
+	StartCopy();
+}
 // Message handler for CopyDialog box.
 INT_PTR CALLBACK CopyDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -104,11 +117,12 @@ INT_PTR CALLBACK CopyDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			PostQuitMessage(0);
 			return (INT_PTR)TRUE;
 		case IDOK:
-			OnStartCopy(hDlg);
+			// OnStartCopy(hDlg);
+			StartCopy();
 			break;
 		case IDC_BUTTON_FILE:
-			GetFileURL(hDlg, szOpenfile, L"Chọn file cần copy");
-			SetWindowText(hEditChooseFile, szOpenfile);
+			GetFileURL(hDlg, folder.szFileName,folder.szSourceFile, L"Chọn file cần copy");
+			SetWindowText(hEditChooseFile, folder.szSourceFile);
 			break;
 		case IDC_BUTTON_SAVE_FILE:
 			if (BrowseFolder(hDlg))

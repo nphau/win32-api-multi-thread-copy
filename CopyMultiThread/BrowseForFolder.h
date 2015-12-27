@@ -3,15 +3,19 @@
 #include "resource.h"
 #include <windowsx.h>
 #include <shlobj.h>	// BROWSEINFO
+#include <commdlg.h>
 
 /*
  * Save infomation of folder
  */
-struct FOLDER
+typedef struct FOLDER
 {
-	WCHAR szFolderPath[MAX_PATH]; // Full path
-	WCHAR szFolderName[MAX_PATH]; // Only folder name
-};
+	WCHAR szFileName[MAX_PATH];		// Only file nane
+	WCHAR szSourceFile[MAX_PATH];	// Full file path
+	WCHAR szFolderPath[MAX_PATH];	// Full folder path
+	WCHAR szFolderName[MAX_PATH];	// Only folder name
+
+} *PFOLDER, FOLDER;
 
 static FOLDER folder;
 
@@ -100,5 +104,35 @@ bool BrowseFolder(HWND hDlg)
 	{
 		wcscpy(folder.szFolderPath, L"");
 		return false;
+	}
+}
+
+void GetFileURL(HWND hWnd, WCHAR fileTitle[], WCHAR path[], WCHAR szDlgTitle[])
+{
+	OPENFILENAME ofn;
+
+	WCHAR szFilePath[MAX_PATH] = L"";
+	
+	ZeroMemory(&ofn, sizeof(OPENFILENAME));
+
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = hWnd;
+	ofn.lpstrFilter = L"All file (*.*)\0*.*\0";
+	ofn.lpstrFile = szFilePath;
+
+	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+	// use the contents of szFile to initialize itself.
+	ofn.lpstrFile[0] = '\0';
+	ofn.lpstrTitle = szDlgTitle;		// Dialog title
+	ofn.lpstrFileTitle = NULL;	// File name and extension
+	ofn.nMaxFile = MAX_PATH;
+	ofn.nFilterIndex = 1;
+	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
+	ofn.lpstrDefExt = L"txt";
+
+	if (GetOpenFileName(&ofn))
+	{
+		wcscpy(path, szFilePath);
+		wcscpy(fileTitle, ofn.lpstrFileTitle);
 	}
 }
