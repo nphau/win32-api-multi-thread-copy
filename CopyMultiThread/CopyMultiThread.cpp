@@ -136,7 +136,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// TODO: Add any drawing code here...
 		EndPaint(hWnd, &ps);
 		break;
-	
+
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -155,7 +155,6 @@ INT_PTR CALLBACK CopyDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 	switch (message)
 	{
 	case WM_INITDIALOG:
-		
 		OnCreate(hDlg);
 		return (INT_PTR)TRUE;
 	case WM_COMMAND:

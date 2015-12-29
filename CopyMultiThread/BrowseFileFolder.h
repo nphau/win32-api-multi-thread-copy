@@ -16,6 +16,7 @@ typedef struct MYFILE
 	WCHAR		szFilePath[MAX_PATH];		// Full file path
 	WCHAR		szFolderPath[MAX_PATH];		// Full folder path
 	WCHAR		szFolderName[MAX_PATH];		// Only folder name
+	WCHAR		szNewFilePath[MAX_PATH];		// Only folder name
 
 } *PMYFILE, MYFILE;
 
