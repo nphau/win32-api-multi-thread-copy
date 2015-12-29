@@ -1,14 +1,15 @@
-// CopyMultiThread.cpp : Defines the entry point for the application.
+﻿// CopyMultiThread.cpp : Defines the entry point for the application.
 //
 
 #include "stdafx.h"
-#include "BrowseForFolder.h"
+#include "BrowseFileFolder.h"
 #include "CopyMultiThread.h"
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	CopyDialog(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -135,6 +136,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// TODO: Add any drawing code here...
 		EndPaint(hWnd, &ps);
 		break;
+	
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -142,4 +144,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
+}
+
+// Message handler for CopyDialog box.
+INT_PTR CALLBACK CopyDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	hDialog = hDlg;
+
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		
+		OnCreate(hDlg);
+		return (INT_PTR)TRUE;
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case IDCANCEL:
+			EndDialog(hDlg, LOWORD(wParam));
+			PostQuitMessage(0);
+			return (INT_PTR)TRUE;
+		case IDOK:
+			OnStartCopy(hDlg, ComboBox_GetCurSel(hComboThread) + 1);
+			break;
+		case IDC_BUTTON_FILE: // Select file
+			OnSelectFileToCopy(hDlg);
+			break;
+		case IDC_BUTTON_SAVE_FILE: // Select folder
+			OnSelectFolderToSaveFile(hDlg);
+			break;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
 }

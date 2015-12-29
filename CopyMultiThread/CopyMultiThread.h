@@ -1,6 +1,9 @@
 ﻿#pragma once
 
 #include "resource.h"
+#include <vector>
+#include "StrLib.h"
+#include "ThreadLib.h"
 
 #define MAX_LOADSTRING 100
 
@@ -12,6 +15,10 @@ static TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 static HWND hEditChooseFile = NULL;
 static HWND hEditSaveFile = NULL;
 static HWND hComboThread = NULL;
+
+static HWND hDialog = NULL;
+
+static std::vector<HWND> hThreadUI;
 
 void InitThreadComboBox(HWND hDlg)
 {
@@ -34,103 +41,103 @@ void InitThreadComboBox(HWND hDlg)
 		// Add string to combobox.
 		SendMessage(hComboThread, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
 	}
-	SendMessage(hComboThread, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+	SendMessage(hComboThread, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
 }
-void OnCreateProcessing(HWND hDlg)
+
+void InitThreadUIProgress(HWND hDlg)
 {
+
+	hThreadUI.push_back(GetDlgItem(hDlg, IDC_Pro1));
+	SendDlgItemMessage(hDlg, IDC_Pro1, PBM_SETBARCOLOR, 0, RGB(255, 0, 0));
+
+	hThreadUI.push_back(GetDlgItem(hDlg, IDC_Pro2));
+	SendDlgItemMessage(hDlg, IDC_Pro2, PBM_SETBARCOLOR, 0, RGB(0, 255, 0));
+
+
+	hThreadUI.push_back(GetDlgItem(hDlg, IDC_Pro3));
+	SendDlgItemMessage(hDlg, IDC_Pro3, PBM_SETBARCOLOR, 0, RGB(0, 0, 255));
+
+	hThreadUI.push_back(GetDlgItem(hDlg, IDC_Pro4));
+	SendDlgItemMessage(hDlg, IDC_Pro4, PBM_SETBARCOLOR, 0, RGB(255, 255, 0));
+
+	hThreadUI.push_back(GetDlgItem(hDlg, IDC_Pro5));
+	SendDlgItemMessage(hDlg, IDC_Pro5, PBM_SETBARCOLOR, 0, RGB(255, 0, 255));
+
+}
+void OnCreate(HWND hDlg)
+{
+
 	// Get Handle of controls
 	hEditChooseFile = GetDlgItem(hDlg, IDC_EDIT_OPENFILE);
 	hEditSaveFile = GetDlgItem(hDlg, IDC_EDIT_SAVE_FILE);
 	hComboThread = GetDlgItem(hDlg, IDC_COMBO_THREAD);
-
-	ZeroMemory(&folder, sizeof(FOLDER));
+	
+	ZeroMemory(&myFile, sizeof(MYFILE));
 
 	// Initializing default value for combo box
 	InitThreadComboBox(hDlg);
+
+	//
+	InitThreadUIProgress(hDlg);
 }
-
-DWORD WINAPI ThreadProc(LPVOID lpParam)
+/**/
+bool OnStartCopy(HWND hDlg, int idCurrentThredNum)
 {
-	// Cast the parameter to the correct data type.
-	// The pointer is known to be valid because 
-	// it was checked for NULL before the thread was created.
-	PFOLDER folder = (PFOLDER)lpParam;
-
-	WCHAR src[MAX_PATH] = L"";
-	WCHAR dest[MAX_PATH] = L"";
-
-	wcscpy(src,folder->szSourceFile);
-
-	wcscpy(dest, folder->szFolderPath);
-	wcscat(dest, L"\\");
-	wcscat(dest, folder->szFileName);
-
-	if (CopyFile(src, dest, FALSE))
-	{
-		MessageBox(NULL, L"Copy thành công", L"ThreadFunc", MB_OK);
-	}
-	return 0;
-}
-
-void StartCopy()
-{
-	try{
-		// Default Priority: TTHREAD_PRIORITY_NORMAL
-		HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, (LPVOID)&folder, 0, 0);
-	}
-	catch (...)
-	{
-		GetLastError();
-	}
-}
-void OnStartCopy(HWND hDlg)
-{
-	if (!wcscmp(folder.szSourceFile, L""))
+	if (!wcscmp(myFile.szFilePath, L""))
 	{
 		MessageBox(hDlg, L"Bạn chưa chọn file để copy!", szTitle, MB_OK | MB_ICONHAND);
-		return;
+		return false;
 	}
-	if (!wcscmp(folder.szFolderPath, L""))
+	if (!wcscmp(myFile.szFolderPath, L""))
 	{
 		MessageBox(hDlg, L"Bạn chưa chọn thư mục để lưu file!", szTitle, MB_OK | MB_ICONHAND);
-		return;
+		return false;
 	}
-	StartCopy();
+	return InitCopyThreads(hDlg, idCurrentThredNum);
 }
-// Message handler for CopyDialog box.
-INT_PTR CALLBACK CopyDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+
+/**/
+bool OnSelectFileToCopy(HWND hDlg)
 {
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
+	if (GetFileURL(hDlg, myFile.szFileName, myFile.szFilePath,
+		L"Chọn file cần copy"))
 	{
-	case WM_INITDIALOG:
-
-		OnCreateProcessing(hDlg);
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		switch (LOWORD(wParam))
+		SetWindowText(hEditChooseFile, myFile.szFilePath);
+		if (GetMyFileInfo())
 		{
-		case IDCANCEL:
-
-			EndDialog(hDlg, LOWORD(wParam));
-			PostQuitMessage(0);
-			return (INT_PTR)TRUE;
-		case IDOK:
-			// OnStartCopy(hDlg);
-			StartCopy();
-			break;
-		case IDC_BUTTON_FILE:
-			GetFileURL(hDlg, folder.szFileName,folder.szSourceFile, L"Chọn file cần copy");
-			SetWindowText(hEditChooseFile, folder.szSourceFile);
-			break;
-		case IDC_BUTTON_SAVE_FILE:
-			if (BrowseFolder(hDlg))
-				SetWindowText(hEditSaveFile, folder.szFolderPath);
-			break;
+			SetWindowText(GetDlgItem(hDlg, IDC_FSIZE), GetWcharFrom(L"Size: ", myFile.dwFileSize, L" byte(s)"));
+			SetWindowText(GetDlgItem(hDlg, IDC_FNAME), GetWcharFrom(L"Filename: ", myFile.szFileName, L""));
 		}
-
-		break;
 	}
-	return (INT_PTR)FALSE;
+	return true;
+}
+/**/
+bool OnSelectFolderToSaveFile(HWND hDlg)
+{
+	if (BrowseFolder(hDlg))
+	{
+		SetWindowText(hEditSaveFile, myFile.szFolderPath);
+
+
+		WCHAR dest[MAX_PATH] = L"";
+		wcscpy(dest, myFile.szFolderPath);
+		wcscat(dest, L"\\");
+		wcscat(dest, myFile.szFileName);
+
+		// Open the existing file, or if the file does not exist,
+		// create a new file.
+		myFile.hFileNew = CreateFile(dest,
+			GENERIC_WRITE,         // open for writing
+			FILE_SHARE_READ,          // allow multiple readers
+			NULL,                     // no security
+			OPEN_ALWAYS,              // open or create
+			FILE_ATTRIBUTE_NORMAL,    // normal file
+			NULL);                    // no attr. template
+
+		if (myFile.hFileNew == INVALID_HANDLE_VALUE)
+		{
+			return false;
+		}
+	}
+	return true;
 }

@@ -1,41 +1,25 @@
 ﻿#pragma once
 
 #include "resource.h"
-#include <windowsx.h>
-#include <shlobj.h>	// BROWSEINFO
+#include <shlobj.h>
 #include <commdlg.h>
+#include <Shlwapi.h>
+#include <windowsx.h>
 
-/*
- * Save infomation of folder
- */
-typedef struct FOLDER
+/* Store infomation of file which is copied */
+typedef struct MYFILE
 {
-	WCHAR szFileName[MAX_PATH];		// Only file nane
-	WCHAR szSourceFile[MAX_PATH];	// Full file path
-	WCHAR szFolderPath[MAX_PATH];	// Full folder path
-	WCHAR szFolderName[MAX_PATH];	// Only folder name
+	DWORD		dwFileSize;					// File size
+	HANDLE		hFileOld;					// Handle of the old file
+	HANDLE		hFileNew;					// Handle of the new file
+	WCHAR		szFileName[MAX_PATH];		// Only file nane and extension
+	WCHAR		szFilePath[MAX_PATH];		// Full file path
+	WCHAR		szFolderPath[MAX_PATH];		// Full folder path
+	WCHAR		szFolderName[MAX_PATH];		// Only folder name
 
-} *PFOLDER, FOLDER;
+} *PMYFILE, MYFILE;
 
-static FOLDER folder;
-
-// This will set the font of the controls
-void SetFont(HWND hwnd, LPTSTR FontName, int FontSize)
-{
-	HFONT hf;
-	LOGFONT lf = { 0 };
-	HDC hdc = GetDC(hwnd);
-
-	GetObject(GetWindowFont(hwnd), sizeof(lf), &lf);
-	lf.lfWeight = FW_REGULAR;
-	lf.lfHeight = (LONG)FontSize;
-	lstrcpy(lf.lfFaceName, FontName);
-	hf = CreateFontIndirect(&lf);
-	SetBkMode(hdc, OPAQUE);
-	SendMessage(hwnd, WM_SETFONT, (WPARAM)hf, TRUE);
-	ReleaseDC(hwnd, hdc);
-
-}
+static MYFILE myFile;
 
 /*
  * BFFCALLBACK function pointer
@@ -52,19 +36,18 @@ int __stdcall BrowseCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpD
 	{
 
 	case BFFM_INITIALIZED:
-		wcscpy(folder.szFolderName, L"");
-		wcscpy(folder.szFolderPath, L"");
+		wcscpy(myFile.szFolderName, L"");
+		wcscpy(myFile.szFolderPath, L"");
 		break;
-		// Selection change message
 	case BFFM_SELCHANGED:
-		SHGetPathFromIDListW((ITEMIDLIST*)lParam, folder.szFolderPath);
+		SHGetPathFromIDListW((ITEMIDLIST*)lParam, myFile.szFolderPath);
 		break;
 	}
 	return 0;
 }
 
 /*
-* Choose folder to save file
+* Choose myFile to save file
 */
 bool BrowseFolder(HWND hDlg)
 {
@@ -72,47 +55,47 @@ bool BrowseFolder(HWND hDlg)
 	ZeroMemory(&browinfo, sizeof(browinfo));
 
 	browinfo.hwndOwner = hDlg; // A handle to the owner window for the dialog box.
-	browinfo.pidlRoot = NULL; // The location of the root folder
+	browinfo.pidlRoot = NULL; // The location of the root myFile
 
-	// Pointer to a buffer to receive the display name of the folder selected by the user.
+	// Pointer to a buffer to receive the display name of the myFile selected by the user.
 	// The size of this buffer is assumed to be MAX_PATH characters.
-	browinfo.pszDisplayName = folder.szFolderName;
+	browinfo.pszDisplayName = myFile.szFolderName;
 
 	// Pointer to a null-terminated string that is displayed above the tree view control in the dialog box.
 	// This string can be used to specify instructions to the user.
 	browinfo.lpszTitle = _T("Vui lòng chọn thư mục mà bạn muốn lưu file ...");
 
-	/* BIF_RETURNONLYFSDIRS: Only return file system directories. If the user selects folders that are not part of the file system, the OK button is grayed
-	* BIF_DONTGOBELOWDOMAIN: Do not include network folders below the domain level in the dialog box's tree view control.
+	/* BIF_RETURNONLYFSDIRS: Only return file system directories. If the user selects myFiles that are not part of the file system, the OK button is grayed
+	* BIF_DONTGOBELOWDOMAIN: Do not include network myFiles below the domain level in the dialog box's tree view control.
 	* BIF_STATUSTEXT: Include a status area in the dialog box. The callback function can set the status text by sending messages to the dialog box. This flag is not supported when BIF_NEWDIALOGSTYLE is specified
-	* BIF_NEWDIALOGSTYLE: Use the new user interface. Setting this flag provides the user with a larger dialog box that can be resized. The dialog box has several new capabilities, including: drag-and-drop capability within the dialog box, reordering, shortcut menus, new folders, delete, and other shortcut menu commands.
+	* BIF_NEWDIALOGSTYLE: Use the new user interface. Setting this flag provides the user with a larger dialog box that can be resized. The dialog box has several new capabilities, including: drag-and-drop capability within the dialog box, reordering, shortcut menus, new myFiles, delete, and other shortcut menu commands.
 	* BIF_EDITBOX: Include an edit control in the browse dialog box that allows the user to type the name of an item.
-	* BIF_BROWSEINCLUDEFILES: The browse dialog box displays files as well as folders.
+	* BIF_BROWSEINCLUDEFILES: The browse dialog box displays files as well as myFiles.
 	*/
-	browinfo.ulFlags = BIF_NONEWFOLDERBUTTON | BIF_RETURNONLYFSDIRS | BIF_DONTGOBELOWDOMAIN
-		| BIF_USENEWUI;
+	browinfo.ulFlags = BIF_NONEWFOLDERBUTTON | BIF_RETURNONLYFSDIRS | BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
 
 	// Pointer to an application-defined function that the dialog box calls when an event occurs.
 	browinfo.lpfn = BrowseCallbackProc;
 
-	// Displays the selected folder
+	// Displays the selected myFile
 	if (SHBrowseForFolderW(&browinfo) != NULL)
 	{
 		return true;
 	}
 	else
 	{
-		wcscpy(folder.szFolderPath, L"");
+		wcscpy(myFile.szFolderPath, L"");
 		return false;
 	}
 }
 
-void GetFileURL(HWND hWnd, WCHAR fileTitle[], WCHAR path[], WCHAR szDlgTitle[])
+/* The function gets file path */
+bool GetFileURL(HWND hWnd, WCHAR fileTitle[], WCHAR filePath[], WCHAR szDlgTitle[])
 {
 	OPENFILENAME ofn;
 
 	WCHAR szFilePath[MAX_PATH] = L"";
-	
+
 	ZeroMemory(&ofn, sizeof(OPENFILENAME));
 
 	ofn.lStructSize = sizeof(OPENFILENAME);
@@ -123,8 +106,8 @@ void GetFileURL(HWND hWnd, WCHAR fileTitle[], WCHAR path[], WCHAR szDlgTitle[])
 	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
 	// use the contents of szFile to initialize itself.
 	ofn.lpstrFile[0] = '\0';
-	ofn.lpstrTitle = szDlgTitle;		// Dialog title
-	ofn.lpstrFileTitle = NULL;	// File name and extension
+	ofn.lpstrTitle = szDlgTitle;	// Dialog title
+	ofn.lpstrFileTitle = NULL;		// File name and extension
 	ofn.nMaxFile = MAX_PATH;
 	ofn.nFilterIndex = 1;
 	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
@@ -132,7 +115,10 @@ void GetFileURL(HWND hWnd, WCHAR fileTitle[], WCHAR path[], WCHAR szDlgTitle[])
 
 	if (GetOpenFileName(&ofn))
 	{
-		wcscpy(path, szFilePath);
-		wcscpy(fileTitle, ofn.lpstrFileTitle);
+		wcscpy(filePath, szFilePath);
+		wcscpy(fileTitle, szFilePath);
+		PathStripPathW(fileTitle);
+		return true;
 	}
+	return false;
 }

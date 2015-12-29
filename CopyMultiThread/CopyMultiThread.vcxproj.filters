@@ -30,7 +30,16 @@
     <ClInclude Include="CopyMultiThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BrowseForFolder.h">
+    <ClInclude Include="BrowseFileFolder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileLib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StrLib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
