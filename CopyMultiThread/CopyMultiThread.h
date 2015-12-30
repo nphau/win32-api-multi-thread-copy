@@ -86,7 +86,7 @@ void OnCreate(HWND hDlg)
 	InitThreadUIProgress(hDlg);
 }
 /**/
-bool OnStartCopy(HWND hDlg, int idCurrentThredNum)
+bool OnStartCopy(HWND hDlg)
 {
 	if (!wcscmp(myFile.szFilePath, L""))
 	{
@@ -116,7 +116,13 @@ bool OnStartCopy(HWND hDlg, int idCurrentThredNum)
 			return false;
 		}
 	}
-	return InitCopyThreads(hDlg, idCurrentThredNum);
+
+	//
+	HANDLE hThread = CreateThread(NULL, 0,
+		(LPTHREAD_START_ROUTINE)InitCopyThreadsProc,
+		NULL, 0, 0);
+
+	return true;
 }
 
 /**/

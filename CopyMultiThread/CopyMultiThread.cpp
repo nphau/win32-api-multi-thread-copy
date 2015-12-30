@@ -165,7 +165,8 @@ INT_PTR CALLBACK CopyDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			PostQuitMessage(0);
 			return (INT_PTR)TRUE;
 		case IDOK:
-			OnStartCopy(hDlg, ComboBox_GetCurSel(hComboThread) + 1);
+			idCurrentThredNum = ComboBox_GetCurSel(hComboThread) + 1;
+			OnStartCopy(hDlg);
 			break;
 		case IDC_BUTTON_FILE: // Select file
 			OnSelectFileToCopy(hDlg);
